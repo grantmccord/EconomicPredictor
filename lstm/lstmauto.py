@@ -4,6 +4,9 @@ import numpy as np
 from torch import torch, nn
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import warnings
+import pickle
+import os
+path = os.path.dirname(os.path.abspath(__file__))
 warnings.filterwarnings('ignore')
 
 def split_sequences(input_sequences, output_sequence, n_steps_in, n_steps_out):
@@ -71,7 +74,7 @@ def training_loop(n_epochs, lstm, optimiser, loss_fn, X_train, y_train,
             train_loss_save.append(loss.item())
             test_loss_save.append(test_loss.item())
 
-df = pd.read_csv('processed_data/revised_processed_data.csv')
+df = pd.read_csv('revised_processed_data.csv')
 naics = df['NAICS'].unique()
 naics_titles = np.array(['Agriculture, Forestry, Fishing and Hunting',
        'Mining, Quarrying, and Oil and Gas Extraction', 'Utilities',
@@ -85,10 +88,10 @@ naics_titles = np.array(['Agriculture, Forestry, Fishing and Hunting',
        'Arts, Entertainment, and Recreation',
        'Accommodation and Food Services',
        'Other Services (except Public Administration)',
-       'Federal, State, and Local Government, excluding State and Local Government Schools and Hospitals and the U.S. Postal Service (OEWS Designation)'],
+       'Federal, State, and Local Government'],
       dtype=object)
 pred_len = 2
-feed_days = 5
+feed_days = 8
 train_loss_save = []
 test_loss_save = []
 for i,code in enumerate(naics):
@@ -117,7 +120,7 @@ for i,code in enumerate(naics):
     X_test_tensors_final = torch.reshape(X_test_tensors,  
                                         (X_test_tensors.shape[0], feed_days, 
                                         X_test_tensors.shape[2])) 
-    n_epochs = 300 # 300 epochs
+    n_epochs = 100
     learning_rate = 0.001 # 0.001 lr
 
     input_size = 10 # number of features
@@ -162,7 +165,11 @@ for i,code in enumerate(naics):
     plt.ylabel("Total Employment")
     plt.title(f"Total Employment across {naics_titles[i]} over time")
     plt.legend()
-    plt.savefig(f"lstm_plots2/predict_naics_{code}.png", dpi=300)
+    plt.savefig(path + f"/lstm_plots/predict_naics_{code}.png", dpi=300)
     plt.clf()
+
+    #Save model
+    torch.save(lstm, path + f"/lstm_models_pt/naics_{code}_model.pt")
+
 print(f'Training loss: {train_loss_save}')
 print(f'Test loss: {test_loss_save}')
